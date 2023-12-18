@@ -6,3 +6,5 @@
 
 # VSCode files
 *.vscode
+
+analysis_scripts/0_ImageJscripts/*
