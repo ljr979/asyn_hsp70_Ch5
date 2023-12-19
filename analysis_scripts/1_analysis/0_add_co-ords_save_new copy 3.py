@@ -6,67 +6,93 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from loguru import logger
 
+#this script finds the XY coordinates of each of the chaperones, then finds the trajectories that match. They then rename the trajectories with the COORDINATES of the trajectory in the name. This means we can find the size of the molecule AND the location at the same time. These renamed trajectories are then saved for py4bleaching analysis.
 
-input_top = 'Y:/Chaperone_subgroup/LaurenR/20230821_Experiment100-b/20230821_Experiment100b-FC2-fibrils-A8-B1-SOD1-5nM/'
+#-------------------------------------------------------------------------------#
+#direct this script to the experiment folder with the imageJ outputs. 
+input_top = '/'
 
 output_folder='python_results/'
 
 if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
+#these files are within the folder you've directed the script to, but don't want to be included. So this list can be adjusted for all files to  ignore. 
 throwout=['ROI.zip','TransformationMatrices.txt', 'Channel488 and 647 dual Ex_Seq0000.nd2','Channel488 and 647 dual Ex_Seq0001.nd2', 'coords_added', 'Thumbs.db']
 
+#this list loops through the top folder and finds all 'image' folders which contain all data pertaining to that image
 tops=[folder for folder in os.listdir(f'{input_top}') if folder not in throwout]
 
+#define these for each experiment and protein and what you'd like the treatment to be called
 Experiment_number='Experiment100b-FC2-1'
 protein='HSPA8'
 treatment = f'A8-B1-SOD1-5nM'
 
 def read_trajectories(hsp_traj_paths,fibril_coloc_paths):
+    """ finds the trajectories, reads them in and assigns a molecule name to match the fibril to the hsp coordinates. 
+    Args:
+        hsp_traj_paths (list): list of paths for trajectories files
+        fibril_coloc_paths (list): list of paths to fibril colocalisation data
+
+    Returns:
+        df: a file with all of the fibrils, and all the hsps with new names and coordinates
+    """
     new_trajs=[]
     new_fibs=[]
+    #loop over all of the hsp trajectories files. 
     for item in hsp_traj_paths:
         item
         # trajectory_hsp=hsp_traj_paths[[item]]
+        #fix up the slashes
         item=item.replace('//','/')
         item=item.replace('\\','/')
+        #find the number of the image the current trajectories file came from
         hspnumber=item.split('/')[-1].split('.tif')[0].split('_')[-1]
+        #the number of the experiment that the images came from
         experiment_number1=item.split('/')[-4]
+        #now loop over the fibril colocalisation files
         for item1 in fibril_coloc_paths:
             item1
+            #fix slashes
             item1=item1.replace('//','/')
             item1=item1.replace('\\','/')
             # fibril_coloc=fibril_coloc_paths[[item1]]
+            #find the number of the image the current fibrils file came from
             fibril_number=item1.split('/')[-1].split('.tif')[0].split('_')[-1]
+            #find the experiment that the current fibrils came from
             experiment_number2=item1.split('/')[-4]
+            #check whether the fibrils and chaperones have come from the same image in the same experiment
             if (hspnumber == fibril_number) and (experiment_number1==experiment_number2):
-
-
+                #read the trajectory file
                 matching_trajectory_file=pd.read_csv(item)
                 matching_trajectory_file.drop([col for col in matching_trajectory_file.columns.tolist() if ' ' in col], axis=1, inplace=True)
                 #matching_trajectory_file.drop([col for col in matching_trajectory_file.columns.tolist() if 'Mean_0' in col], axis=1, inplace=True)
+                #read the colocalisation file
                 fibrils_coloc_file=pd.read_csv(item1)
                 # client_trajectories.columns = [str(col) + '_client' for col in client_trajectories.columns]
-
+                #turn the hsp XY coordinates into one column
                 fibrils_coloc_file['hsp_coords_X_Y']=list(zip(fibrils_coloc_file.X2, fibrils_coloc_file.Y2))
                 fibrils_coloc_file.rename(columns={'Contour ID':'Contour_ID'}, inplace=True)
+                #make a list out of the hsp coordinates in the fibrils colocalisation file
                 hspcoords=fibrils_coloc_file['hsp_coords_X_Y'].tolist()
-
+                
+                #turn coordinates into X_Y format instead of [x, y] format
                 new_coords_IDs=[]
                 for whoops in hspcoords:
                     XY_new=str(whoops[0])+'_'+str(whoops[1])
                     new_coords_IDs.append(XY_new)
                 fibrils_coloc_file['new_coords_IDs_X_Y']=new_coords_IDs
                 fibrils_coloc_file["Contour_ID"] = fibrils_coloc_file["Contour_ID"].values.astype(str)
+                #combine Contour id AND XY COORDINATES OF the hsps to make a new ID which is unique
                 fibrils_coloc_file['new_ID_hspX_hspY'] = fibrils_coloc_file["Contour_ID"] +"_"+ fibrils_coloc_file["new_coords_IDs_X_Y"]
 
 
                 
-
+                #filter for colocalised
                 fibril_IDS_coloc_df=fibrils_coloc_file[fibrils_coloc_file['distance']>-1]
                 
 
-
+                #transpose
                 trans_traj_file = matching_trajectory_file.T.reset_index()
 
 
@@ -128,21 +154,31 @@ def read_trajectories(hsp_traj_paths,fibril_coloc_paths):
     return new_fibs, new_trajs
 
 def grab_trajectories_paths(input_folder, timepoint_folders):
+    """find the trajectories and put them in a list
+
+    Args:
+        input_folder (str): top folder
+        timepoint_folders (list): list of folders to loop over and get trajectories from
+    Returns:
+        list: list of files with fibril colocalisation and trajectories
+    """
     fibril_coloc_paths=[]
     hsp_traj_paths=[]
+
     for treatment in timepoint_folders:
         treatment
+        #find all files that are colocalised trajectories
         yikes_trajectories=[[f'{root}/{name}' for name in files if '_colocal_traj.csv' in name]for root, dirs, files in os.walk(f'{input_folder}{treatment}/')]
         yikes_trajectories=[item for sublist in yikes_trajectories for item in sublist]
+        #filter out the AF488 ones (this is just for AF647 trajectories)
         yikes_trajectories=[item for item in yikes_trajectories if 'AF488' not in item]
         yikes_trajectories=[item for item in yikes_trajectories if 'af488' not in item]
-        
-
-
+        #now find all fibrils files
         yikes_fibrils=[[f'{root}/{name}' for name in files if 'Colocalisation_analysis' in root]for root, dirs, files in os.walk(f'{input_folder}/')]
         yikes_fibrils=[item for sublist in yikes_fibrils for item in sublist]
-        # yikes_fibrils=[item for item in yikes_fibrils if 'AF488' not in item]
-        # yikes_fibrils=[item for item in yikes_fibrils if 'af488' not in item]
+        yikes_fibrils=[item for item in yikes_fibrils if 'AF488' not in item]
+        yikes_fibrils=[item for item in yikes_fibrils if 'af488' not in item]
+
         yikes_fibrils=[item for item in yikes_fibrils if 'colocalized' not in item]
         yikes_fibrils=[item for item in yikes_fibrils if 'Trajectories' not in item]
         fibril_coloc_paths.append(yikes_fibrils)
@@ -150,7 +186,14 @@ def grab_trajectories_paths(input_folder, timepoint_folders):
     return fibril_coloc_paths, hsp_traj_paths
 
 def workflow(input_top, output_folder, tops, treatment):
+    """this runs the functions above and returns the files
 
+    Args:
+        input_top (str): path to top folder
+        output_folder (str): where to save files
+        tops (list): folders to loop over and run on
+        treatment (str): how to track the treatment
+    """
     for conc in tops: 
         input_folder=f'{input_top}{conc}/'
         conc=conc.split('_')[-1]

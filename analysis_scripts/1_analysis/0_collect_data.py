@@ -5,13 +5,17 @@ from loguru import logger
 import glob
 import shutil
 
+#this script simply tranfers trajectories and colocalisation data from the experiment folder (where imageJ has output it ) and sets up the folders and filenames so that they are identical for all experiments and the scripts that follow need less adjustment for each experiment.
+
 #change these for experiment
-input_folder = 'Y:/Chaperone_subgroup/LaurenR/20230821_Experiment100-b/'
+#top level experiment folder path
+input_folder = '/'
 output_folder = 'imagejresults/'
 
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
+#this is what they will be called.
 #can change based on proteins in experiment
 hsp_colocalised = 'JB1_fibril_colocal_data'
 fibril_colocalised= 'HSPA8_fibril_colocal_data'
