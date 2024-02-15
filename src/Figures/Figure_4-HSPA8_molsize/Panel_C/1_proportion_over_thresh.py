@@ -1,12 +1,12 @@
+"""This script finds the proportion of molecules per experiment (i.e., replicate) that have a normalised intensity above a given threshold, and pots them as a barplot with error and scatter for replicates. (Panel C, thesis Figure 5.4)
 
+"""
 from enum import unique
 import os, re
-import threading
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from loguru import logger
 import math
 
 def prop_over_thresh(df, threshold, col, group):
@@ -44,6 +44,14 @@ def prop_over_thresh(df, threshold, col, group):
 
 
 def plot_prop_over_threshold(df, thresh, ylim, palette):
+    """plot as a barplot the % of molecules that are over the defined threshold
+
+    Args:
+        df (df): df containing data
+        thresh (float): threshold
+        ylim (int): int to get rid of white space to 100 or show to 100%
+        palette (str): colour palette
+    """
     Fig,ax = plt.subplots(figsize=(5,5))
     ax = sns.barplot(data=df, x='Treatment', y='value', palette=palette, saturation=1, capsize=0.3, errcolor='0.4',linewidth=2, edgecolor='0',alpha=0.8)
     sns.scatterplot(data=df, x='Treatment', y='value', legend=False, hue='Treatment', ax=ax)
