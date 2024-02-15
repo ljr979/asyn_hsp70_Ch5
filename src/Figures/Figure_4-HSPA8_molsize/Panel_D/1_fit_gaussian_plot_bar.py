@@ -1,3 +1,6 @@
+"""Fit normalised molecule size data to gaussian distributions (1 skewed, or 3 normal). Then, calculate for each, the proportion of the data that falls within each distribution. saves collated fit data, as well as the separate treatment fit and proportion of data within the fit. Plot as a stacked bar. Corresponds to Panel D, Thesis Figure 5.4D. 
+
+    """
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -11,6 +14,18 @@ import matplotlib.pyplot as plt
 from lmfit import models
 
 def fit_single_gauss(df, treatment, mu_1, sigma_1, amplitude_1):
+    """_summary_
+
+    Args:
+        df (_type_): _description_
+        treatment (_type_): _description_
+        mu_1 (_type_): _description_
+        sigma_1 (_type_): _description_
+        amplitude_1 (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     filt_df = df[df['Treatment'] == treatment]
     bins = np.arange(0, 0.4, 0.025)
     inds = np.digitize(filt_df['rel_intens'].astype(float), bins)
@@ -54,6 +69,24 @@ def fit_single_gauss(df, treatment, mu_1, sigma_1, amplitude_1):
     return proportion_df, paramaters
 
 def three_fit_gauss_dif_constrained_nativespont(df, treatment, mu_1, sigma_1, amplitude_1, mu_2, sigma_2, amplitude_2, mu_3, sigma_3, amplitude_3):
+    """_summary_
+
+    Args:
+        df (_type_): _description_
+        treatment (_type_): _description_
+        mu_1 (_type_): _description_
+        sigma_1 (_type_): _description_
+        amplitude_1 (_type_): _description_
+        mu_2 (_type_): _description_
+        sigma_2 (_type_): _description_
+        amplitude_2 (_type_): _description_
+        mu_3 (_type_): _description_
+        sigma_3 (_type_): _description_
+        amplitude_3 (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     filt_df = df[df['Treatment'] == treatment]
     bins = np.arange(0.025, 0.9, 0.025)
     inds = np.digitize(filt_df['rel_intens'].astype(float), bins)
@@ -70,8 +103,6 @@ def three_fit_gauss_dif_constrained_nativespont(df, treatment, mu_1, sigma_1, am
     params_1 = model_1.make_params(center = mu_1, sigma = sigma_1, amplitude = amplitude_1, min = 0)
     params_2 = model_2.make_params(center = mu_2, sigma = sigma_2, amplitude = amplitude_2, min = 0)
     params_3 = model_3.make_params(center = mu_3, sigma = sigma_3, amplitude = amplitude_3, min = 0)
-
-
 
     params = params_1.update(params_2)
     params = params.update(params_3)
@@ -91,9 +122,7 @@ def three_fit_gauss_dif_constrained_nativespont(df, treatment, mu_1, sigma_1, am
     aoc_m1 = paramaters['m1_amplitude']
     aoc_m2 = paramaters['m2_amplitude']
     aoc_m3 = paramaters['m3_amplitude']
-    # aoc_m1 = (paramaters['m1_amplitude']*paramaters['m1_sigma'])/0.3989
-    # aoc_m2 = (paramaters['m2_amplitude']*paramaters['m2_sigma'])/0.3989
-    # aoc_m3 = (paramaters['m3_amplitude']*paramaters['m3_sigma'])/0.3989
+
     sum_aoc = aoc_m1 + aoc_m2 + aoc_m3
     aoc_m1_percent_of_total = (aoc_m1/sum_aoc)*100
     aoc_m2_percent_of_total = (aoc_m2/sum_aoc)*100
@@ -160,25 +189,3 @@ if __name__ == "__main__":
     plt.xlabel("Treatment")
     plt.ylabel("Molecules in each peak(%)")
     plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-#this also is not working? wtf
-gaussian_kj_skew_con_nat = fit_gauss_dif_constrained_nativespont(compiled_df, 'JB1-A8-110-1nM-',mu_1, sigma_1, amplitude_1, 0.2, .05, 1)
-collated.append(gaussian_kj_skew_con_nat)
-
-
-gaussian_kj_skew_con_nat = three_fit_gauss_dif_constrained_nativespont(compiled_df, 'JB1-A8-110-1nM-', mu_1, sigma_1, amplitude_1,  0.2, 0.05 ,2, 0.5, .05, 1)
-
-gaussian_kj_skew_con_nat = fit_single_gauss2(compiled_df, 'JB1-A8-110-1nM-', mu_1, sigma_1, amplitude_1)
-
