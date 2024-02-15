@@ -170,15 +170,14 @@ if __name__ == "__main__":
     collated = pd.concat(collated)
     #save the collated percentage of area under the curve that is assigned to each population
     collated.to_csv(f'{output_folder}gaussians_collated.csv')
-
-
+    
     colors = plt.cm.BuPu(np.linspace(0.4, 1, 4))
     collated.plot(
         x='treatment', 
         y=['m1', 'm2', 'm3'], 
         kind='bar',
         stacked=True,
-        figsize=(10, 6),
+        figsize=(5, 4),
         color=colors, 
         title=f"A8 molecules in each population (%)",
         linewidth=2, 
@@ -186,6 +185,6 @@ if __name__ == "__main__":
         alpha=0.8
         )
     plt.legend(loc="upper left", ncol=3, title='Population')
-    plt.xlabel("Treatment")
+    plt.xlabel(" ")
     plt.ylabel("Molecules in each peak(%)")
     plt.show()
