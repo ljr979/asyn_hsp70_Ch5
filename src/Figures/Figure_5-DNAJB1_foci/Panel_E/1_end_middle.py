@@ -40,9 +40,9 @@ def wrangling_data_for_plotting(input_folder, filename, radius, output_folder):
     middle_end_lengths_df.to_csv(f'{output_folder}1_foci_per_length_.csv')
     return middle_end_lengths_df
 
-def plotting_chaps_per_pix_end_middle(data, palette, protein, legendtitle, plot_title, order_of_experiment):
+def plotting_chaps_per_pix_end_middle(data, palette, protein, yval, legendtitle, plot_title, order_of_experiment):
     fig, ax= plt.subplots (figsize=(5, 5))
-    g=sns.barplot(data=data, x="Treatment", y="log_chaps_per_length*100", hue="end_or_middle", 
+    g=sns.barplot(data=data, x="Treatment", y=yval, hue="end_or_middle", 
     order=order_of_experiment, 
     palette=palette, alpha=.9, edgecolor="black", linewidth=3)
     plt.ylabel(f'{protein} per unit length (pixel)')
@@ -83,5 +83,5 @@ if __name__ == "__main__":
     #-----------plotting section
     order_of_experiment= ['JB1-alone-', 'JB1-A8-','JB1-A8-110-0.5uM-', 'JB1-A8-SOD-0.5uM-']
 
-    plotting_chaps_per_pix_end_middle(data=d, palette='rocket_r', protein='DNAJB1', legendtitle='Location of molecule', plot_title=f'{protein} foci per pixel fibril length', order_of_experiment=order_of_experiment)
+    plotting_chaps_per_pix_end_middle(data=d, palette='rocket_r', protein='DNAJB1', yval='log_chaps_per_length*100', legendtitle='Location of molecule', plot_title=f'{protein} foci per pixel fibril length', order_of_experiment=order_of_experiment)
 
