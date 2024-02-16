@@ -153,6 +153,25 @@ def anova_endmid(df, treatment):
 
     return y
 
+
+def summaries(test): 
+    """Find the average between the replicates, and SEM
+
+    Args:
+        test (df): dataframe with the colocalisation data
+
+    Returns:
+        df: dataframe with the summaries in it
+    """
+    
+    agg_func_math = {
+    'rel_intens': [ 'mean',  'sem']
+    }
+    summary_df = test.groupby(['Experiment_number'], as_index=False).agg(agg_func_math).round(2).reset_index()
+    summary_df.columns = ['_'.join(col).rstrip('_') for col in summary_df.columns.values]
+    return summary_df
+
+
 if __name__ == "__main__":
 
    
@@ -228,3 +247,4 @@ if __name__ == "__main__":
 
     summary_ends.to_csv(f'{input_folder}molsize_treatments_end_anova.csv')
     summary_mids.to_csv(f'{input_folder}molsize_treatments_mid_anova.csv')
+
