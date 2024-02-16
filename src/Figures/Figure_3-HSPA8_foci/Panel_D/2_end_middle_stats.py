@@ -22,6 +22,7 @@ def oneway_anova_treatments(df, col1, col2):
     return x
 
 if __name__ == "__main__":
+    
     inputu=('data/Figures/Figure_3/Panel_D/')
 
     #make this the same as what it was in the previous script for plotting as this is what it's saved as and we will look for that
