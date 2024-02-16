@@ -9,8 +9,6 @@ from scipy import stats
 import scikit_posthocs as sp
 import statsmodels.stats.multicomp as mc
 
-
-
 input_folder='data/Figures/Figure_3/Panel_C/'
 
 all_ratios_df = pd.read_csv(f'{input_folder}foci_per_pixel_log.csv')

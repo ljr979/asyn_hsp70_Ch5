@@ -1,6 +1,6 @@
 from src.py4bleaching.py4bleaching import analysis
 
-#This script runs the py4bleaching pipeline on all the trajectories
+#This script runs the py4bleaching pipeline on all the trajectories1_hsp_stoichiometry
 input_folder = 'python_results/Trajectories/'
 output_folder = 'python_results/py4bleaching/Trajectories/coloc/'
 
