@@ -205,7 +205,7 @@ if __name__ == "__main__":
     #direct this script to the experiment folder with the imageJ outputs. 
     input_top = 'data/Analysis_workflow/0_images/Expnum_t1-t2-t3/'
 
-    output_folder='data/Analysis_workflow/1_imagej_data/1_colour_plus_fibrils/Experimentnum-t1-t2-t3/'
+    output_folder='data/Analysis_workflow/2_example_python_output/0_add_co-ords/'
 
     Experiment_number = 'Experimentnum-treatment-treatment2'
     protein = 'protein'
