@@ -26,8 +26,8 @@ if __name__ == "__main__":
         
     #change these for experiment
     #top level experiment folder path
-    input_folder = '/'
-    output_folder = 'imagejresults/'
+    input_folder = 'data/Analysis_workflow/0_images/Expnum_t1-t2-t3/'
+    output_folder = 'data/Analysis_workflow/2_example_python_output/0_collect_data/'
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -45,10 +45,10 @@ if __name__ == "__main__":
     folders = {
 
     #non-coloc
-    'file_location_imagej_output/647/non-coloc_trajectories/647/':('treatment1/Trajectories/Experiment_number-treatment1_protein_treatment2-concentration/non-coloc/', hspa8_noncoloc),
+    '647/non-coloc_trajectories/647/':('treatment1/Trajectories/Experiment_number-treatment1_protein_treatment2-concentration/non-coloc/', hspa8_noncoloc),
 
     #coloc data
-    'file_location_imagej_output/647/Colocalisation_analysis/':('treatment1/Colocalisation/Experiment_number-treatment1_protein_treatment2-concentration/fibrils-647/', fibril_colocalised),
+    '647/Colocalisation_analysis/':('treatment1/Colocalisation/Experiment_number-treatment1_protein_treatment2-concentration/fibrils-647/', fibril_colocalised),
 
         }
 
