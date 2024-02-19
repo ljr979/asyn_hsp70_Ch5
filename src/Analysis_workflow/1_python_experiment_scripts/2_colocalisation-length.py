@@ -1,15 +1,10 @@
-import os, re
+"""This script purely looks at COLOCALISATION and LENGTH OF FIBRILS, no data on molecule size etc.
+
+"""
+import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from loguru import logger
-
-#This script purely looks at COLOCALISATION and LENGTH OF FIBRILS, no data on molecule size etc.
-#ALSO: IT IS A SCRIPT FOR ANALYZING 3 COLOUR EXPERIMENT with fibrils + two different coloured chaperones
-
-input_folder='imagejresults/FC1-2/Colocalisation/'
-output_folder='python_results/FC1-2/Colocalisation/'
 
 def get_experiment_info(input_folder, treatment):
     """sets parameters so that you can save the important info from the experiment to carry through
@@ -208,156 +203,208 @@ def create_length_summary(lengths_collated):
 
     return summary_data_fibrils
 
-     
-treatments=[treatment for treatment in os.listdir(input_folder)]
-lengths_collated=[]
-percentage_coloc_fibrils=[]
-hsp_only_paths=[]
+def find_colocalisation(concatinate_coloc_data, find_coloc_fibs_filter, percentage_coloc_fibrils, treatment, output, median_seeds_length, fibril_hsp_files, zoom_factor):
+    """calculate the percentage of fibrils colocalised, and save.
+
+    Args:
+        concatinate_coloc_data (func): function to concatinate the colocalisation files
+        find_coloc_fibs_filter (func): function to find colocalised fibrils in order to act on them and do calculations
+        percentage_coloc_fibrils (df): dataframe with the colocalised fibrils
+        treatment (str): treatment being looped over
+        output (str): where to save the treatment specific data
+        median_seeds_length (int): length of seeds above whic hare fibrils
+        fibril_hsp_files (list): list of fibrils + hsp files with colocalisation data
+        zoom_factor (int): size of pixel in nm
+
+    Returns:
+        df
+    """
+    colocalisation_output_fibrils = concatinate_coloc_data(files=fibril_hsp_files)
+            
+    colocalisation_output_fibrils = pd.concat(colocalisation_output_fibrils)
+    colocalisation_output_fibrils.rename(columns={'Contour ID':'Contour_ID'}, inplace=True)
+            
+    #correct the lengths column to account for pixel size in nm (zoomed in or out)
+    colocalisation_output_fibrils['real_length_nm'] = colocalisation_output_fibrils['Length']*zoom_factor
+    colocalised_fibrils = colocalisation_output_fibrils[colocalisation_output_fibrils['colocalisation']=='True']
+    colocalised_fibrils.to_csv(f'{output}colocalised_fibrils_only.csv')
+
+    percentage_colocalised = {}
+    for protein, df in colocalisation_output_fibrils.groupby('protein_colocalised'):
+        protein = protein
+        lengths_collated, percentage_fibrils_colocalised = find_coloc_fibs_filter(colocalisation_output_fibrils=df, median_seeds_length=median_seeds_length, protein=protein)
+        #add into dictionary for each protein the percentage of total fibrils that are colocalised with a chaperone
+        percentage_colocalised[protein]=percentage_fibrils_colocalised
+
+    percentage_colocalised = pd.DataFrame(percentage_colocalised.items(), columns=['proteins_colocalised', 'percent_colocalised'])
+    percentage_colocalised['treatment'] = treatment
+
+    percentage_colocalised.to_csv(f'{output}{treatment}_percentage_colocalisation.csv')
+    percentage_coloc_fibrils.append(percentage_colocalised)
+    return lengths_collated, percentage_coloc_fibrils
+
+def concatinate(df, files_list):
+    """concatinate files in a list
+
+    Args:
+        df (list): empty list to put files into
+        files_list (list): list of files to read in and concat
+
+    Returns:
+        _type_: _description_
+    """
+    for fc in files_list:
+        path=fc.replace('//', '/')
+        path=path.replace('\\', '/')
+        test=pd.read_csv(fc)
+        cond=path.split('/')[5]
+        test['treatment']=cond
+        df.append(test)
+    df=pd.concat(df)
+    return df
+
+def plot_colocalisation(output_folder, df, order_of_experiment, ylim, hue_var, title):
+    """plot barplot of each protein colocalsied w fibril or each other
+
+    Args:
+        output_folder (str): where to save the plot
+        df (df): dataframe w colocalisation and error
+        order_of_experiment (list): list of the order of treatments in experiment, for plotting
+        ylim (int  ): limit for plot
+        hue_var (str): the variable / column to use for hue
+        title (str): name of plot
+    """
+    ax=sns.barplot(data=df, x='treatment_to_plot', y='percent_colocalised', hue=hue_var, palette='Purples', order=order_of_experiment, alpha=0.45, edgecolor='black')
+    ax.set_ylim(0,ylim)
+    ax.set_xlabel('Protein colocalised with fibrils/each other')
+    ax.set_ylabel('Percentage (%) colocalised')
+    ax.set_title(f'{title}')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(f'{output_folder}percent_proteins_colocalised.png')
+    plt.show()
+
+def plot_violin_2protein(output_folder, length, order_of_experiment):
+    """plot the length data as violinplot (coloc and non coloc fibrils). 
+
+    Args:
+        output_folder (str): where to save plots
+        length (df): df with all lengths of fibrils from the experiment
+        order_of_experiment (list): order to plot
+    """
+    for protein, df in length.groupby('protein_colocalised'): 
+        protein
+        df
+        fig, ax = plt.subplots()
+        ax = sns.violinplot(x='treatment_to_plot', y= 'real_length_nm', hue= 'colocalisation', data=df, scale='width', palette='Blues_r', order=order_of_experiment, alpha=0.25)
+        ax.legend(loc='upper center', ncol=2)
+        plt.ylabel('Fibril length (nm)')
+        plt.xlabel('Experiment condition')
+        protein = protein.split('_')[0]
+        plt.title(f'Length of fibrils colocalised with {protein} (in nm)')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(f'{output_folder}/{protein}_fibril_length_distributions.png')
+        plt.show()
+
+def workflow(get_experiment_info, concatinate_coloc_data, find_coloc_fibs_filter, create_length_summary, find_colocalisation, input_folder, output_folder, treatments, percentage_coloc_fibrils, hsp_only_paths, zoom_factor, median_seeds_length):
+    """organise functions to run on treatments and save legnth and colocalisation data for each.
+
+    Args:
+        get_experiment_info (func): gathers information from folders that coloc files are contained within
+        concatinate_coloc_data (func): concat files that have colocalisation data
+        find_coloc_fibs_filter (func): does the work= finds fibrils and colocalisation / length data.
+        create_length_summary (func): summary (mean, sd) to check data makes sense
+        find_colocalisation (func): other work funciton: finds and calculates the % colocalised proteins
+        input_folder (str): location of experiment data (from 'colocalisation' data saved from ImageJ output)
+        output_folder (str): where to save the python output on colocalisation, and the plots
+        treatments (list): the treatments that colocalisation data are nested within
+        percentage_coloc_fibrils (df): dataframe with colocalisation data
+        hsp_only_paths (list): paths with the colocalisation between hsps only (not fibrils)
+        zoom_factor (int): this is SPECIFIC TO MICROSCOPE : this is how many nm per pixel
+        median_seeds_length (int): average length of a seed (above which fibrils are considered fibrils rather than seeds. )
+
+    Returns:
+        dummary data about length and colocalisation
+    """
+    for treatment in treatments:
+        #make a giant for-loop OR define functions here that we can then act on using multiple different input folders. these input folders can then all be acted on, and a graph can plot each of the 'length' columns in each of these. p.s add in seeds so that we can filter out the seeds that are in this batch
+        treatment
+        folder, concentration, experiment_number, output = get_experiment_info(input_folder, treatment)
+    
+        folder = f'{folder}fibrils-647/'
+
+        fibril_hsp_files = [filename for filename in os.listdir(f'{folder}/') if 'fibril' in filename]
+
+        #if there is a file in the list of hsp files go ahead here
+        if len(fibril_hsp_files)>0:
+            lengths_collated, percentage_coloc_fibrils = find_colocalisation(concatinate_coloc_data, find_coloc_fibs_filter, percentage_coloc_fibrils, treatment, output, median_seeds_length, fibril_hsp_files, zoom_factor)
 
 
-#loop over each treatment under the top folder
-for treatment in treatments:
-    #make a giant for-loop OR define functions here that we can then act on using multiple different input folders. these input folders can then all be acted on, and a graph can plot each of the 'length' columns in each of these. p.s add in seeds so that we can filter out the seeds that are in this batch
-    treatment
-    folder, concentration, experiment_number, output=get_experiment_info(input_folder, treatment)
+        hsp_only_colocalised_files = [filename for filename in os.listdir(folder) if 'fibril' not in filename]
+        for filename in hsp_only_colocalised_files:
+            path = f'{folder}{filename}'
+            hsp_only_paths.append(path)
+
+    lengths_collated = pd.concat(lengths_collated)
+    lengths_collated.to_csv(f'{output_folder}lengths_collated.csv')
+    percentage_coloc_fibrils=pd.concat(percentage_coloc_fibrils)
+    percentage_coloc_fibrils.to_csv(f'{output_folder}fibrils_only_coloc_output.csv')
+    summary_data_fibrils = create_length_summary(lengths_collated)
+
+    return percentage_coloc_fibrils, summary_data_fibrils
+
+if __name__ == "__main__":   
+
+    input_folder = 'data/Analysis_workflow/2_example_python_output/0_collect_data/Colocalisation/'
+    output_folder = 'data/Analysis_workflow/2_example_python_output/2_colocalisation-length/Colocalisation/'  
+
+    treatments = [treatment for treatment in os.listdir(input_folder)]
+    lengths_collated = []
+    percentage_coloc_fibrils = []
+    hsp_only_paths = []
+    #this says how many nm per pixel
+    zoom_factor = 160
     #define the length of seeds batch, in nm
     median_seeds_length = 200
 
- 
-    folder=f'{folder}fibrils-647/'
+    #loop over each treatment under the top folder
+    percentage_coloc_fibrils, summary_data_fibrils = workflow(get_experiment_info, concatinate_coloc_data, find_coloc_fibs_filter, create_length_summary, find_colocalisation, input_folder, output_folder, treatments, percentage_coloc_fibrils, hsp_only_paths, zoom_factor, median_seeds_length)
 
-    fibril_hsp_files=[filename for filename in os.listdir(f'{folder}/') if 'fibril' in filename]
+    #---------------------------------------------------------------------------------
+    #PLOTTING
+    #for plotting multiple treatments on the same graph from the % colocalisation dataframes saved before
+    experiment_type  = [name for name in os.listdir(input_folder) ]
 
-    #this says how many nm per pixel
-    zoom_factor = 160
-    
-    #if there is a file in the list of hsp files go ahead here
-    if len(fibril_hsp_files)>0:
+    concat = []
+    length = []
+    #gather files we generated above
+    yikes_coloc = [[f'{root}/{name}' for name in files if 'percentage_colocalisation.csv' in name]for root, dirs, files in os.walk(f'{output_folder}/')]
+    yikes_coloc = [item for sublist in yikes_coloc for item in sublist]
 
-        colocalisation_output_fibrils = concatinate_coloc_data(files=fibril_hsp_files, zoom_factor=zoom_factor)
-        
-        colocalisation_output_fibrils=pd.concat(colocalisation_output_fibrils)
-        colocalisation_output_fibrils.rename(columns={'Contour ID':'Contour_ID'}, inplace=True)
-        
-        #correct the lengths column to account for pixel size in nm (zoomed in or out)
-        colocalisation_output_fibrils['real_length_nm'] = colocalisation_output_fibrils['Length']*zoom_factor
-        colocalised_fibrils = colocalisation_output_fibrils[colocalisation_output_fibrils['colocalisation']=='True']
-        colocalised_fibrils.to_csv(f'{output}colocalised_fibrils_only.csv')
-        percentage_colocalised={}
-        for protein, df in colocalisation_output_fibrils.groupby('protein_colocalised'):
-            protein=protein
-            lengths_collated, percentage_fibrils_colocalised=find_coloc_fibs_filter(colocalisation_output_fibrils=df, median_seeds_length=median_seeds_length, protein=protein)
-            percentage_colocalised[protein]=percentage_fibrils_colocalised
+    #gather files we generated above
+    yikes_len = [[f'{root}/{name}' for name in files if 'lengths_data.csv' in name]for root, dirs, files in os.walk(f'{output_folder}')]
+    yikes_len = [item for sublist in yikes_len for item in sublist]
 
-        percentage_colocalised=pd.DataFrame(percentage_colocalised.items(), columns=['proteins_colocalised', 'percent_colocalised'])
-        percentage_colocalised['treatment']=treatment
+    #concatinate colocalisation files
+    concat = concatinate(df=concat, files_list=yikes_coloc)
+    length = concatinate(df=length, files_list=yikes_len)
 
-        percentage_colocalised.to_csv(f'{output}{treatment}_percentage_colocalisation.csv')
-        percentage_coloc_fibrils.append(percentage_colocalised)
-    folder, concentration, experiment_number, output=get_experiment_info(input_folder, treatment)
-    hsp_only_colocalised_files=[filename for filename in os.listdir(folder) if 'fibril' not in filename]
-    for filename in hsp_only_colocalised_files:
-        path= f'{folder}{filename}'
-        hsp_only_paths.append(path)
+    #dictionary to shorten/simplify the names for plotting treatments (adjust accordingly)
+    dicto = {'2_example_python_output': 'Treat_plot',
+            }
 
+    #map dictionary so we have a new col for plotting
+    concat['treatment_to_plot']=concat['treatment'].map(dicto)
+    length['treatment_to_plot']=length['treatment'].map(dicto)
 
-lengths_collated=pd.concat(lengths_collated)
+    #define order of plotting with the 'treatment to plot' name
+    order_of_experiment = ['Treat_plot']
 
-lengths_collated.to_csv(f'{output_folder}lengths_collated.csv')
+    #plot barplot of colocalisation
+    plot_colocalisation(output_folder=output_folder, df=concat, order_of_experiment=order_of_experiment, ylim=100, hue_var='proteins_colocalised', title='HSPA8 colocalised with fibrils or DNAJB1')
 
-summary_data_fibrils=create_length_summary(lengths_collated)
-percentage_coloc_fibrils=pd.concat(percentage_coloc_fibrils)
-
-percentage_coloc_fibrils.to_csv(f'{output_folder}fibrils_only_coloc_output.csv')
-
-#---------------------------------------------------------------------------------
-#PLOTTING
-#for plotting multiple treatments on the same graph from the % colocalisation dataframes saved before
-input_folder='python_results/Colocalisation/'
-output_folder='python_results/Colocalisation/'
-
-experiment_type=[name for name in os.listdir(input_folder) ]
-experiment_type=[name for name in experiment_type if not 'png' in name ]
-
-concat=[]
-length=[]
-#gather files we generated above
-yikes_coloc=[[f'{root}/{name}' for name in files if 'percentage_colocalisation.csv' in name]for root, dirs, files in os.walk(f'{input_folder}/')]
-yikes_coloc=[item for sublist in yikes_coloc for item in sublist]
-
-#gather files we generated above
-yikes_len=[[f'{root}/{name}' for name in files if 'lengths_data.csv' in name]for root, dirs, files in os.walk(f'{input_folder}')]
-yikes_len=[item for sublist in yikes_len for item in sublist]
-
-
-#concatinate colocalisation files
-for fc in yikes_coloc:
-    path=fc.replace('//', '/')
-    path=path.replace('\\', '/')
-    test=pd.read_csv(fc)
-    cond=path.split('/')[2]
-    test['treatment']=cond
-    concat.append(test)
-
-#concatinate length files
-for leng in yikes_len:
-    path=leng.replace('//', '/')
-    path=path.replace('\\', '/')
-    leng=pd.read_csv(leng)
-    
-    cond=path.split('/')[2]
-    print(cond)
-    leng['treatment']=cond
-
-    length.append(leng)
-    
-length=pd.concat(length)
-concat=pd.concat(concat)
-
-#dictionary to shorten/simplify the names for plotting treatments (adjust accordingly)
-dicto = {'Experiment100-FC1-1_HSPA8_A8-B1-110-5nM': 'A8+JB1+110-5nM',
-         'Experiment100-FC2-1_HSPA8_A8-B1-SOD1': 'A8+B1+SOD1',
-         'Experiment100-FC1-2_HSPA8_A8-B1-110-0.5uM': 'A8+JB1+110-0.5uM'
-
-
-}
-
-#map dictionary so we have a new col for plotting
-concat['treatment_to_plot']=concat['treatment'].map(dicto)
-length['treatment_to_plot']=length['treatment'].map(dicto)
-
-#define order of plotting with the 'treatment to plot' name
-order_of_experiment = ['A8+JB1+110-5nM',
-                       
-                       'A8+JB1+110-0.5uM',
-                       'A8+B1+SOD1']
-
-#plot barplot of colocalisation
-ax=sns.barplot(data=concat, x='treatment_to_plot', y='percent_colocalised', hue='proteins_colocalised', palette='Purples', order=order_of_experiment, alpha=0.45, edgecolor='black')
-ax.set_ylim(0,100)
-ax.set_xlabel('Protein colocalised with fibrils/each other')
-ax.set_ylabel('Percentage (%) colocalised')
-ax.set_title('Percentage of fibrils or hspa8 bound by DNAJB1/hspa8')
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.savefig(f'{output_folder}percent_proteins_colocalised.png')
-plt.show()
-
-#violinplot of fibril length colocalised and not
-#plot distribution of fibril lengths coloc and not coloc
-for protein, df in length.groupby('protein_colocalised'): 
-    protein
-    df
-    fig, ax = plt.subplots()
-    ax = sns.violinplot(x='treatment_to_plot', y= 'real_length_nm', hue= 'colocalisation', data=df, scale='width', palette='Blues_r', order=order_of_experiment, alpha=0.25)
-    ax.legend(loc='upper center', ncol=2)
-    # ax.annotate(f"median colocalised length = {median_length_colocal_fibrils}nm", xy=(0.1, 0.8), xycoords='figure fraction')
-    plt.ylabel('Fibril length (nm)')
-    plt.xlabel('Experiment condition')
-    protein=protein.split('_')[0]
-    plt.title(f'Length of fibrils colocalised with {protein} (in nm)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(f'{output_folder}/{protein}_fibril_length_distributions.png')
-    plt.show()
+    #violinplot of fibril length colocalised and not
+    #plot distribution of fibril lengths coloc and not coloc
+    plot_violin_2protein(output_folder, length, order_of_experiment)
 
