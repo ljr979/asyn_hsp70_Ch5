@@ -1,4 +1,4 @@
-"""Fit normalised molecule size data to gaussian distributions (1 skewed, or 3 normal). Then, calculate for each, the proportion of the data that falls within each distribution. saves collated fit data, as well as the separate treatment fit and proportion of data within the fit. Plot as a stacked bar. Corresponds to Panel D, Thesis Figure 5.4D. 
+"""Fit normalised molecule size data to gaussian distributions (1 skewed, or 3 normal). Then, calculate for each, the proportion of the data that falls within each distribution. saves collated fit data, as well as the separate treatment fit and proportion of data within the fit. Plot as a stacked bar. Corresponds to Panel D, Thesis Figure 5.4D. Also outputs the plots which can be found in Supplementary figure 5.5 (the fitting of each population)
 
     """
 import numpy as np
