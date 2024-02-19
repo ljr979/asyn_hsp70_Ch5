@@ -188,7 +188,7 @@ def workflow(input_top, output_folder, tops, treatment, filter_list, traj_filter
     new_fibs, new_trajs = read_trajectories(hsp_traj_paths,fibril_coloc_paths)
 
     output_folder_fibs = f'{output_folder}/fibril_coloc_data/{Experiment_number}_{protein}_{treatment}/'
-    output_folder_trajectories = f'{output_folder}/Trajectories/{Experiment_number}_{protein}_{treatment}/'
+    output_folder_trajectories = f'{output_folder}/Trajectories/coloc/{Experiment_number}_{protein}_{treatment}/'
 
     if not os.path.exists(output_folder_fibs):
             os.makedirs(output_folder_fibs)
