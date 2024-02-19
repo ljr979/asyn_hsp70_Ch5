@@ -4,12 +4,20 @@ A repository containing all code pertaining to chapter 5 of my PhD thesis (scrip
 The scripts from this body of work are split into two categories within ```src```: 
 ```Analysis_workflow``` and ```Figures```. Analysis workflow includes all scripts used in the experimental workflow which generated the data which was eventually collated into the figures presented in Chapter 5 of the thesis. 
 
-Unprocessed data, (and data from various stages of processing along the python workflow, as example outputs) as well as the data used to plot the figures in my thesis, are available in an online repository **(link here)** and can be downloaded into this workspace to explore the analysis workflow and plot the figures. To do so, use the download script in the ```utilities``` folder and follow the data directory that is downloaded with the repository. 
+Unprocessed data, (and data from various stages of processing along the python workflow, as example outputs) as well as the data used to plot the figures in my thesis, are available in an online repository [here]('https://zenodo.org/records/10677072/files/') and can be downloaded into this workspace to explore the analysis workflow and plot the figures. To do so, use the ```data_download.py``` script in the ```utilities``` folder and follow the data directory that is downloaded with the repository. 
 
 All paths within analysis scripts direct to the appropriate location within the ```data``` folder in order to run the script and produce the desired output. 
 
+The ```environment.yml``` file contains the specific environment used in python to perform all analyses and can be used to recreate the same environment.
+
+
+## Prerequisites
+
+This analysis assumes a standard installation of Python 3 (=> **3.7.10**), and ImageJ =>**v1.53c**. For specific package requirements, see the environment.yml file, or  create a new conda environment containing all packages by running ```conda create -f environment.yml```. In addition to the analysis contained here, the simple statistical tests & data fitting in Figures 1 & 2 were performed using [GraphPad Prism v **9.0**](https://www.graphpad.com/scientific-software/prism/).
+
+
 # *Analysis_workflow*
-## 0_ImageJscripts
+## [0_ImageJscripts](src\Analysis_workflow\0_ImageJscripts)
 
 These scripts perform image processing on the RAW images coming from the microscope. 
 They are annotated line by line, but a brief description of what each macro does is included below:
@@ -26,7 +34,7 @@ All scripts correct beam profile, find fibrils using a ridge detection plugin, f
 
 Each of these macros requires an ```ROI.zip```, background images manually generated (gaussian blur of each channel generated in ImageJ), and a ```transformation matrices``` manually generated in ImageJ. These should be saved in the '```647```' folder of the raw data, where all of the images taken with the 647 laser on, reside. 
 
-## 1_python_workflow
+## [1_python_workflow](src\Analysis_workflow\1_python_workflow)
 This repository contains the scripts that I used to analyse data that comes straight from image processing in ImageJ. So, for each experiment investigating fibril/Hsp interactions, these scripts were used to generate files which could then be collated for the 2_thesis scripts. A brief description is included below to use as a directory. 
 
 ```0_add_co-ords``` 
@@ -56,11 +64,15 @@ This repository contains the scripts that I used to analyse data that comes stra
 ```7_subunits_end_middle``` : 
 - This uses the counts obtained via py4bleaching and combines it with the end_vs_middle output. assigns the name of the trajectory as the same name given to the colocalised spots on the fibrils, and matches them  with their location. i.e., we get out the subunits per molecule, and whether this is located at the end or middle. plots this as a boxplot per region, per treatment.
 
-## utilities
+## [utilities](src\Analysis_workflow\utilities)
 ```py4bleaching```:
-- See ['add in link to py4bleahcing repository] to see the installable package. However, the package included here is for reference. It analyses trajectories extracted from images, and finds the number of fluorescently labelled subunits per Hsp molecule. This is saved in the py4bleaching output in the data repository.  
+- See [this repository](10.5281/zenodo.10616736) to access the installable package of this module. However, the package included here is for reference to the submodule used in the example experiment supplied. It analyses trajectories extracted from images, and finds the number of fluorescently labelled subunits per Hsp molecule. This is saved in the py4bleaching output in the data repository.  
 
-# *Figures*
+```data_download```
+- run this script to download the data repository to plot and analyse the data provided.
+
+# [Figures](src\Figures)
+
 - The data in the figures of my thesis is collated from many separate experiments. The scripts in this folder show the analysis that was performed on the collated output from the Analysis_workflow scripts. 
 
 - Included in here are the scripts that perform all statistical analysis for each of the sections of this thesis chapter.
