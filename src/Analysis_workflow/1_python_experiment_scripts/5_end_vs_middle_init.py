@@ -1,4 +1,7 @@
 
+"""This script finds the end regions of every fibril, and assesses whether the colocalised hsps are bound in the end or the middle region 
+
+"""
 from enum import unique
 import os, re
 import threading
@@ -8,25 +11,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from loguru import logger
 import math
-#This script finds the end regions of every fibril, and assesses whether the colocalised hsps are bound in the end or the middle region 
-input_folder='python_results/Colocalisation/'
-output_folder='python_results/end_vs_middle/step_one/'
-
-treatments=[tm for tm in os.listdir(input_folder)]
-
-
-if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
-#grab all files with all the colocalisation data saved in them
-filepaths=[[f'{root}/{name}' for name in files if 'collated-colocal_data' in name]for root, dirs, files in os.walk(f'{input_folder}')]
-filepaths=[item for sublist in filepaths for item in sublist if not 'coords_added' in item]
-
-#these two lines FILTER for 488 OR 647 LABELLED CHAPERONE. so comment out whichever one you are looking at and change defined protein accordingly (need to do this in a more sophisticated way when I have time)
-
-JB1_filepaths=[item for item in filepaths if 'fibrils-488' in item]
-filepaths=[item for item in filepaths if 'fibrils-647' in item]
-
 #filter for colocalised chaperone on fibril 
 def filter_colocal_fix_glitch(fibrils):
 
@@ -83,7 +67,6 @@ def find_fibril_ends(fibril_IDS_coloc_df, fibrils, IDS_list):
     new_fibrils_df.rename(columns={0:'EndX1',1:'EndX2',2:'EndY1',3:'EndY2', 'X2':'Point_X', 'Y2':'Point_Y'}, inplace=True)
     return new_fibrils_df, fibril_IDS_coloc_df
 
-
 def end_or_middle(new_fibrils_df, radius):
     updated_distance_fibs=[]
     for row , df in new_fibrils_df.groupby('ID_length_conc_image'):
@@ -134,17 +117,38 @@ def workflow(filepath, output_folder, Experiment_number):
     #compare these dataframes and define the end region of each fibril
     new_fibrils_df, fibril_IDS_coloc_df=find_fibril_ends(fibril_IDS_coloc_df, fibrils, IDS_list)
     filepath=filepath.replace('\\', '/')
-    treatment=filepath.split('/')[2]
+    treatment=filepath.split('/')[-4].split('_')[-1]
+    protein=filepath.split('/')[-1].split('_')[0]
     #nfow we have to classify how far the distance we want to classify as an 'end' is
     #define number of pixels that classifies an end
     radius = 2
     updated_distance_fibs=end_or_middle(new_fibrils_df=new_fibrils_df, radius=radius)
-    updated_distance_fibs.to_csv(f'{output_folder}{Experiment_number}_{treatment}_end_vs_middle.csv')
+    updated_distance_fibs.to_csv(f'{output_folder}{Experiment_number}_{treatment}_{protein}_end_vs_middle.csv')
 
-#make this unique to the experiment you're doing as it will save with this number
-Experiment_number='Experiment_100-SODcontrol-hspa8'
-for filepath in filepaths:
-    filepath
-    workflow(filepath, output_folder, Experiment_number)
+
+if __name__ == "__main__":
+
+    input_folder = 'data/Analysis_workflow/2_example_python_output/4_density_pixel/'
+    output_folder = 'data/Analysis_workflow/2_example_python_output/5_end_vs_middle_init/step_one/'
+
+    treatments = [tm for tm in os.listdir(input_folder)]
+
+
+    if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+    #grab all files with all the colocalisation data saved in them
+    filepaths = [[f'{root}/{name}' for name in files if 'collated-colocal_data' in name]for root, dirs, files in os.walk(f'{input_folder}')]
+    filepaths=[item for sublist in filepaths for item in sublist if not 'coords_added' in item]
+
+    #these two lines FILTER for 488 OR 647 LABELLED CHAPERONE. so comment out whichever one you are looking at and change defined protein accordingly 
+
+    #JB1_filepaths=[item for item in filepaths if 'fibrils-488' in item]
+    filepaths=[item for item in filepaths if 'fibrils-647' in item]
+    #make this unique to the experiment you're doing as it will save with this number
+    Experiment_number='Experimentnum'
+    for filepath in filepaths:
+        filepath
+        workflow(filepath, output_folder, Experiment_number)
 
 
