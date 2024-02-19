@@ -7,6 +7,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+#NOTE: this script will only work if you ran the 0_add_coords.py script in the beginning, before running any py4bleaching analysis.
+
 def get_files(input_folder, filters):
     """colect molecule counts files
 
@@ -17,42 +19,42 @@ def get_files(input_folder, filters):
     Returns:
         _type_: _description_
     """
-    input_folder_counts=f'{input_folder}Trajectories/coloc/'
-    treatments=[treatment for treatment in os.listdir(input_folder_counts)]
+    input_folder_counts = f'{input_folder}Trajectories/coloc/'
+    treatments = [treatment for treatment in os.listdir(input_folder_counts)]
     #path to molecule counts files
-    collated_molecule_counts_paths=[]
+    collated_molecule_counts_paths = []
     for treatment in treatments: 
-        filepaths=[[f'{root}/{name}' for name in files if 'molecule_counts.csv' in name]for root, dirs, files in os.walk(f'{input_folder_counts}/')]
-        filepaths=[item for sublist in filepaths for item in sublist]
+        filepaths = [[f'{root}/{name}' for name in files if 'molecule_counts.csv' in name]for root, dirs, files in os.walk(f'{input_folder_counts}/')]
+        filepaths = [item for sublist in filepaths for item in sublist]
         collated_molecule_counts_paths.append(filepaths)
 
     #make sure they're only read in once and no data double up
-    path=[]
+    path = []
     for x in collated_molecule_counts_paths:
         if x not in path:
             path.append(x)
-    collated_molecule_counts_paths=path 
+    collated_molecule_counts_paths = path 
     #flatten list
-    filepaths=[item for sublist in collated_molecule_counts_paths for item in sublist]
+    filepaths = [item for sublist in collated_molecule_counts_paths for item in sublist]
    
     #read in the the files with the counts
-    collated_molecule_counts=[]    
+    collated_molecule_counts = []    
     for filepath in filepaths:
-        df=pd.read_csv(filepath)
+        df = pd.read_csv(filepath)
         collated_molecule_counts.append(df)
-    all_molecule_counts=pd.concat(collated_molecule_counts)
+    all_molecule_counts = pd.concat(collated_molecule_counts)
 
     #find the ends data you generated in step one
-    input_folder_ends=f'{output_folder}step_one/'
+    input_folder_ends = f'{output_folder}step_one/'
     #filter only for the protein you want to look at here
     end_vs_middle_files = [filename for filename in os.listdir(input_folder_ends) if f'{filters}' not in filename]
 
     #collate if there are multiple, smoosh together
-    collated_end_middle=[]
+    collated_end_middle = []
     for filename in end_vs_middle_files:
-        df=pd.read_csv(f'{input_folder_ends}{filename}')
+        df = pd.read_csv(f'{input_folder_ends}{filename}')
         collated_end_middle.append(df)
-    collated_end_middle=pd.concat(collated_end_middle)
+    collated_end_middle = pd.concat(collated_end_middle)
 
     return treatments, all_molecule_counts, collated_end_middle
 
@@ -66,19 +68,19 @@ def end_or_middle_all(end_vs_middle):
     Returns:
         dict: dictionary with the ends, middles and matching unique names
     """
-    end_or_middle=[]
+    end_or_middle = []
     for row, df in end_vs_middle.groupby('new_ID_hspX_hspY_num'):
         row
         #for each of the fibrils that have been analysed for their end and middle colocalisations (in the previous script), we want to split their unique names up into separate columns to map the trajectories to later
-        df[['Contour_ID','coordsX','coordsY', 'number']]=df['new_ID_hspX_hspY_num'].str.split('_', expand = True)
-        df['Contour_ID']=df['Contour_ID'].astype(float)
-        cols=['Contour_ID','coordsX','coordsY']
+        df[['Contour_ID','coordsX','coordsY', 'number']] = df['new_ID_hspX_hspY_num'].str.split('_', expand = True)
+        df['Contour_ID'] = df['Contour_ID'].astype(float)
+        cols = ['Contour_ID','coordsX','coordsY']
         #we are also popping off the enumerated part so that we can match this more easily to the  coords
         df['new_ID_hspX_hspY'] = df[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1)
         end_or_middle.append(df)
-    end_or_middle=pd.concat(end_or_middle)
+    end_or_middle = pd.concat(end_or_middle)
     #now make a dictionary which usess the identifier of the molecule, and the allocation to end or middle, as the value.
-    ends_dict=dict(zip(end_or_middle.new_ID_hspX_hspY, end_or_middle.Where))
+    ends_dict = dict(zip(end_or_middle.new_ID_hspX_hspY, end_or_middle.Where))
     return ends_dict
 
 
@@ -92,16 +94,16 @@ def molecule_counts_format(molecule_counts, ends_dict):
     Returns:
         df: dfs of ends, mids, and together
     """
-    cols=['Contour_ID','coordsX','coordsY']
+    cols = ['Contour_ID','coordsX','coordsY']
     #now we want to join together for the molecule counts dataframe (ie. the py4bleaching output) the columns that are identifiers and their locations, so that they match exactly to the ones from the fibrils (end v middle) output.
     molecule_counts['new_ID_hspX_hspY'] = molecule_counts[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1)
     #now map them together so that the end and middle comes into the molecule counts dataframe 
-    molecule_counts['end_or_middle']=molecule_counts['new_ID_hspX_hspY'].map(ends_dict)
+    molecule_counts['end_or_middle'] = molecule_counts['new_ID_hspX_hspY'].map(ends_dict)
     #drop unnecessary columns
-    molecule_counts=drop_stuff(molecule_counts=molecule_counts)
+    molecule_counts = drop_stuff(molecule_counts=molecule_counts)
     #filter / separate end and middle molecules
-    Ends=molecule_counts[molecule_counts['end_or_middle']=='END']
-    Mids=molecule_counts[molecule_counts['end_or_middle']=='MIDDLE']
+    Ends = molecule_counts[molecule_counts['end_or_middle']=='END']
+    Mids = molecule_counts[molecule_counts['end_or_middle']=='MIDDLE']
     return molecule_counts, Ends, Mids
 
 
@@ -148,9 +150,6 @@ def plot_box_count(molecule_counts, dicto, order_of_experiment, ylim):
     plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
-
-
-#NOTE: this script will only work if you ran the 0_add_coords.py script in the beginning, before running any py4bleaching analysis.
 
 
 if __name__ == "__main__":
