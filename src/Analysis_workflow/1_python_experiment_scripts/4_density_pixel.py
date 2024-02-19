@@ -205,13 +205,12 @@ if __name__ == "__main__":
             't1-t2-t3': '1-2-3',
 
             }
-    #define the order you want to plot (by its new name)
-    order_of_experiment = ['1-2-3']
+
     #map this on as a new col
     concat['treatment'] = concat['concentration'].map(dicto)
 
     #now plot as a boxplot the density of foci/pixel
-    boxplot(df=concat, order_of_experiment=order_of_experiment, ylim=0.5)
+    boxplot(df=concat, order_of_experiment=['1-2-3'], ylim=0.5)
 
 
 
